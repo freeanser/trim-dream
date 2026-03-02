@@ -79,15 +79,33 @@ export default function App() {
     }
   };
 
+  // const handleEnergySelect = (level) => {
+  //   setEnergy(level);
+  //   let tasks = [];
+  //   if (level === 'high') tasks = monthlyPlan.slice(0, 3).map((t, i) => ({ id: i, title: t, completed: false, time: 0, isRunning: false }));
+  //   else tasks = [{ id: 'rest', title: '深呼吸 5 次', completed: false, time: 0 }];
+  //   setTodoList(tasks);
+  // };
+
   const handleEnergySelect = (level) => {
     setEnergy(level);
-    // 簡單的任務分配邏輯
     let tasks = [];
-    if (level === 'high') tasks = monthlyPlan.slice(0, 3).map((t, i) => ({ id: i, title: t, completed: false, time: 0, isRunning: false }));
-    else tasks = [{ id: 'rest', title: '深呼吸 5 次', completed: false, time: 0 }];
+
+    // 根據能量狀態，從月計畫 (monthlyPlan) 中裁切不同數量的任務
+    if (level === 'high') {
+      // 滿滿：取 5 個任務
+      tasks = monthlyPlan.slice(0, 5).map((t, i) => ({ id: i, title: t, completed: false, time: 0, isRunning: false }));
+    } else if (level === 'medium') {
+      // 普通：取 3 個任務
+      tasks = monthlyPlan.slice(0, 3).map((t, i) => ({ id: i, title: t, completed: false, time: 0, isRunning: false }));
+    } else if (level === 'low') {
+      // 低落：取 1 個任務 (如果計畫是空的，給一個預設的溫暖任務)
+      const firstTask = monthlyPlan.length > 0 ? monthlyPlan[0] : '專注在當下，深呼吸';
+      tasks = [{ id: 'low-task', title: firstTask, completed: false, time: 0, isRunning: false }];
+    }
+
     setTodoList(tasks);
   };
-
   const toggleTimer = (id) => {
     setTodoList(prev => prev.map(t => t.id === id ? { ...t, isRunning: !t.isRunning } : t));
   };

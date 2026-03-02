@@ -1,8 +1,9 @@
-// next-app/src/components/views/RoomView.jsx
+// next-app/components/views/RoomView.jsx
 
 "use client";
 import React from 'react';
-import { Settings, Volume2, VolumeX, Map, Mail, Battery, Coffee, Play, Pause, Check } from 'lucide-react';
+// import { Settings, Volume2, VolumeX, Map, Mail, Battery, Coffee, Play, Pause, Check } from 'lucide-react';
+import { Settings, Volume2, VolumeX, Map, Mail, BatteryFull, BatteryMedium, BatteryLow, Coffee, Play, Pause, Check, BriefcaseMedical } from 'lucide-react';
 import CozyRoomScene from '../layout/CozyRoomScene';
 import CuteBean from '../visuals/CuteBean';
 
@@ -42,9 +43,18 @@ const RoomView = ({
           <div className="bg-white p-6 rounded-3xl shadow-sm border-b-4 border-[#E0E0E0]">
             <h2 className="text-xl font-bold text-[#5D4037] mb-4 text-center">今天感覺如何？</h2>
             <div className="grid grid-cols-3 gap-3">
-              <button onClick={() => setEnergy('high')} className="p-4 bg-[#E8F5E9] rounded-2xl flex flex-col items-center"><Battery className="text-green-600" /><span className="text-green-800 font-bold">滿滿</span></button>
-              <button onClick={() => setEnergy('medium')} className="p-4 bg-[#FFF3E0] rounded-2xl flex flex-col items-center"><Battery className="text-orange-600" /><span className="text-orange-800 font-bold">普通</span></button>
-              <button onClick={() => setEnergy('low')} className="p-4 bg-[#EFEBE9] rounded-2xl flex flex-col items-center"><Battery className="text-brown-600" /><span className="text-[#5D4037] font-bold">低落</span></button>
+              <button onClick={() => setEnergy('high')} className="p-4 bg-[#E8F5E9] rounded-2xl flex flex-col items-center">
+                <BatteryFull className="text-green-600" />
+                <span className="text-green-800 font-bold">滿滿</span>
+              </button>
+              <button onClick={() => setEnergy('medium')} className="p-4 bg-[#FFF3E0] rounded-2xl flex flex-col items-center">
+                <BatteryMedium className="text-orange-600" />
+                <span className="text-orange-800 font-bold">普通</span>
+              </button>
+              <button onClick={() => setEnergy('low')} className="p-4 bg-[#EFEBE9] rounded-2xl flex flex-col items-center">
+                <BatteryLow className="text-brown-600" />
+                <span className="text-[#5D4037] font-bold">低落</span>
+              </button>
             </div>
           </div>
         ) : (
