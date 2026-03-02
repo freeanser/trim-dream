@@ -1,48 +1,157 @@
-// 測試用 App.jsx (階段四)
-import React, { useState } from 'react';
-import InitialView from './components/views/InitialView';
-import RoomView from './components/views/RoomView';
+// src / App.jsx
+import React, { useState, useEffect } from 'react';
+import { useOceanSound } from './hooks/useOceanSound';
+import { generateStepsAPI, generatePlanAPI, processUnplannedTaskAPI } from './services/api';
 import { INITIAL_LETTERS } from './data/constants';
 
-export default function App() {
-  // 手動切換這裡的字串來測試不同頁面: 'initial' | 'room'
-  const [view, setView] = useState('initial');
+// Views
+import InitialView from './components/views/InitialView';
+import StepsView from './components/views/StepsView';
+import RoomView from './components/views/RoomView';
+import DeckView from './components/views/DeckView';
+// Features
+import Mailbox from './components/features/Mailbox';
+import FirstAid from './components/features/FirstAid';
 
-  // 模擬一些假資料
+export default function App() {
+  // --- Global State ---
+  const [view, setView] = useState('initial');
   const [userName, setUserName] = useState('');
+  const [beanName, setBeanName] = useState('豆豆');
   const [userGoal, setUserGoal] = useState('');
+
+  // Data State
+  const [letters, setLetters] = useState(INITIAL_LETTERS);
+  const [generatedSteps, setGeneratedSteps] = useState([]);
+  const [selectedSteps, setSelectedSteps] = useState([]);
+  const [detailedPlan, setDetailedPlan] = useState({});
+  const [monthlyPlan, setMonthlyPlan] = useState([]);
+  const [todoList, setTodoList] = useState([]);
+  const [energy, setEnergy] = useState(null);
+
+  // UI State
+  const [showMailbox, setShowMailbox] = useState(false);
+  const [showFirstAid, setShowFirstAid] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasUnreadMail, setHasUnreadMail] = useState(false);
   const [selectedRecharge, setSelectedRecharge] = useState([]);
+
+  // Hooks
+  const { isPlaying, toggleSound } = useOceanSound();
+
+  // --- Handlers ---
+
+  const handleGoalSubmit = async () => {
+    setIsLoading(true);
+    try {
+      const data = await generateStepsAPI(userGoal);
+      setGeneratedSteps(data?.steps || ['制定計畫', '執行行動', '休息']);
+      setView('steps');
+    } catch (e) {
+      console.error(e);
+      setGeneratedSteps(['制定計畫', '執行行動', '休息']);
+      setView('steps');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGeneratePlan = async () => {
+    setIsLoading(true);
+    const stepsToUse = selectedSteps.length > 0 ? selectedSteps : generatedSteps;
+    try {
+      const plan = await generatePlanAPI(userGoal, stepsToUse);
+      setDetailedPlan(plan);
+      const flatPlan = Object.values(plan).flat();
+      setMonthlyPlan(flatPlan);
+      setView('main'); // 或跳轉到 planPreview
+    } catch (e) {
+      console.error(e);
+      setView('main');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEnergySelect = (level) => {
+    setEnergy(level);
+    // 簡單的任務分配邏輯
+    let tasks = [];
+    if (level === 'high') tasks = monthlyPlan.slice(0, 3).map((t, i) => ({ id: i, title: t, completed: false, time: 0, isRunning: false }));
+    else tasks = [{ id: 'rest', title: '深呼吸 5 次', completed: false, time: 0 }];
+    setTodoList(tasks);
+  };
+
+  const toggleTimer = (id) => {
+    setTodoList(prev => prev.map(t => t.id === id ? { ...t, isRunning: !t.isRunning } : t));
+  };
+
+  const completeTask = (task) => {
+    setTodoList(prev => prev.map(t => t.id === task.id ? { ...t, completed: true, isRunning: false } : t));
+  };
+
+  // Timer Effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTodoList(list => list.map(t => t.isRunning ? { ...t, time: t.time + 1 } : t));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // --- Render ---
 
   return (
     <>
-      <div className="fixed top-0 left-0 bg-black/80 text-white p-2 z-[9999]">
-        <span className="mr-2">開發者控制台:</span>
-        <button onClick={() => setView('initial')} className="mr-2 underline">初始頁</button>
-        <button onClick={() => setView('room')} className="underline">房間頁</button>
-      </div>
-
       {view === 'initial' && (
         <InitialView
           userName={userName} setUserName={setUserName}
-          beanName="豆豆" setBeanName={() => { }}
+          beanName={beanName} setBeanName={setBeanName}
           userGoal={userGoal} setUserGoal={setUserGoal}
           selectedRecharge={selectedRecharge}
-          toggleRecharge={(item) => setSelectedRecharge(prev => [...prev, item])}
-          onSubmit={() => alert('送出表單!')}
-          isLoading={false}
+          toggleRecharge={(item) => setSelectedRecharge(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item])}
+          onSubmit={handleGoalSubmit}
+          isLoading={isLoading}
         />
       )}
 
-      {view === 'room' && (
-        <RoomView
-          userName="測試船長"
-          beanName="豆豆"
-          todoList={[{ id: 1, title: "測試任務", completed: false, time: 0, isRunning: false }]}
-          energy="high"
-          onOpenMailbox={() => alert('開信箱')}
-        // ... 其他 props 可以先傳空函式 () => {}
+      {view === 'steps' && (
+        <StepsView
+          userName={userName} userGoal={userGoal}
+          generatedSteps={generatedSteps}
+          selectedSteps={selectedSteps}
+          toggleStep={(step) => setSelectedSteps(prev => prev.includes(step) ? prev.filter(s => s !== step) : [...prev, step])}
+          onBack={() => setView('initial')}
+          onNext={handleGeneratePlan}
+          isLoading={isLoading}
         />
       )}
+
+      {view === 'main' && (
+        <RoomView
+          userName={userName} beanName={beanName}
+          onSwitchToDeck={() => setView('deck')}
+          onOpenMailbox={() => setShowMailbox(true)}
+          onOpenFirstAid={() => setShowFirstAid(true)}
+          isPlaying={isPlaying} toggleSound={toggleSound}
+          hasUnreadMail={hasUnreadMail}
+          energy={energy} setEnergy={handleEnergySelect}
+          todoList={todoList} toggleTimer={toggleTimer} completeTask={completeTask}
+        />
+      )}
+
+      {view === 'deck' && <DeckView onBack={() => setView('main')} />}
+
+      {/* Modals */}
+      <Mailbox
+        isOpen={showMailbox} onClose={() => setShowMailbox(false)}
+        letters={letters} selectedLetter={null} onSelectLetter={() => { }}
+        onOpenWrite={() => { }} hasUnread={hasUnreadMail}
+      />
+
+      <FirstAid
+        isOpen={showFirstAid} onClose={() => setShowFirstAid(false)}
+        userName={userName} beanName={beanName}
+      />
     </>
   );
 }
