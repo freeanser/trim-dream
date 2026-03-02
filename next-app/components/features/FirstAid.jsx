@@ -140,8 +140,18 @@ const FirstAid = ({
       const data = await response.json();
 
       // 3. 解析後端傳回來的資料
-      // (假設後端已經幫我們把 Google 囉嗦的結構拆解，只傳回純文字字串)
-      const resultText = data.text;
+      // const resultText = data.text;
+      // const result = JSON.parse(resultText);
+
+      // 修正：依照 Google Gemini 的真實結構，一層一層把純文字剝出來
+      // Google Gemini 回傳的資料長這樣：
+      // { candidates: [{ content: { parts: [{ text: "結果" }] } }] }
+      const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!resultText) {
+        throw new Error("Gemini 沒有回傳文字，可能是 API 發生錯誤");
+      }
+
       const result = JSON.parse(resultText);
 
       if (result && result.uncontrollable_factors && result.uncontrollable_factors.length > 0) {
@@ -246,7 +256,7 @@ const FirstAid = ({
                 <div className="w-full mt-6 relative">
                   <textarea
                     className="w-full h-32 p-4 rounded-xl bg-white border-2 border-[#E0E0E0] text-[#5D4037] mb-4 outline-none focus:border-[#EF5350] resize-none"
-                    placeholder="例如：收到了拒信，覺得自己很差..."
+                    placeholder="例如：收到了拒信，覺得很難過..."
                     value={worryInput}
                     onChange={(e) => setWorryInput(e.target.value)}
                   />
